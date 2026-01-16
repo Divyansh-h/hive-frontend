@@ -19,7 +19,7 @@ export function useCurrentUser() {
 }
 
 /**
- * Get user by ID.
+ * Get user by ID (basic info).
  * Uses placeholder data for cold cache when prefetched data exists.
  */
 export function useUser(id: string) {
@@ -31,3 +31,17 @@ export function useUser(id: string) {
         placeholderData: (previousData) => previousData,
     });
 }
+
+/**
+ * Get user profile with counts.
+ * Used by Profile page for displaying full user information.
+ */
+export function useUserProfile(id: string) {
+    return useQuery({
+        queryKey: queryKeys.users.detail(id),
+        queryFn: () => usersApi.getProfile(id),
+        enabled: !!id,
+        placeholderData: (previousData) => previousData,
+    });
+}
+

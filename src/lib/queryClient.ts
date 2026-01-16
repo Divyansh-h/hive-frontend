@@ -1,65 +1,112 @@
 /**
- * QueryClient configuration with project-specific defaults.
+ * QueryClient configuration with production-ready defaults.
  *
  * Key behaviors:
- * - Stale time: 5 minutes (stale-while-revalidate pattern)
- * - Retry: Only GET requests (idempotent), mutations never retry
- * - Error handling: Global error boundary integration
+ * - Stale time: 2 minutes (balance freshness vs. network)
+ * - Cache time: 10 minutes (keep data for quick back-nav)
+ * - Retry: Based on ApiError.retryable flag
+ * - Exponential backoff: 1s, 2s, 4s
  */
 
 import { QueryClient, type QueryClientConfig } from '@tanstack/react-query';
+import { ApiError } from './api';
+
+// =============================================================================
+// RETRY LOGIC
+// =============================================================================
+
+/** Max retry attempts for queries */
+const MAX_RETRIES = 3;
 
 /**
  * Determines if a failed request should be retried.
- * Only retries GET requests (idempotent).
+ * Uses ApiError.retryable flag for intelligent retry decisions.
  */
-const shouldRetry = (failureCount: number, error: unknown): boolean => {
-    // Max 2 retries
-    if (failureCount >= 2) return false;
+function shouldRetryQuery(failureCount: number, error: unknown): boolean {
+    // Exceeded max retries
+    if (failureCount >= MAX_RETRIES) return false;
 
-    // Don't retry client errors (4xx)
-    if (error instanceof Error && 'status' in error) {
-        const status = (error as { status: number }).status;
-        if (status >= 400 && status < 500) return false;
+    // Use retryable flag from ApiError
+    if (error instanceof ApiError) {
+        return error.retryable;
     }
 
-    return true;
-};
+    // Unknown errors: retry once
+    return failureCount < 1;
+}
+
+/**
+ * Calculate retry delay with exponential backoff and jitter.
+ */
+function getRetryDelay(attemptIndex: number): number {
+    // Base delay: 1s, 2s, 4s, 8s... capped at 30s
+    const baseDelay = Math.min(1000 * 2 ** attemptIndex, 30000);
+    // Add jitter (±25%) to prevent thundering herd
+    const jitter = baseDelay * 0.25 * (Math.random() - 0.5);
+    return baseDelay + jitter;
+}
+
+// =============================================================================
+// CACHE TIMES
+// =============================================================================
+
+/** How long data is considered fresh (won't refetch) */
+const STALE_TIME = 2 * 60 * 1000; // 2 minutes
+
+/** How long unused data stays in cache */
+const GC_TIME = 10 * 60 * 1000; // 10 minutes
+
+// =============================================================================
+// QUERY CLIENT CONFIG
+// =============================================================================
 
 const queryClientConfig: QueryClientConfig = {
     defaultOptions: {
         queries: {
-            // Stale-while-revalidate: data considered fresh for 5 minutes
-            staleTime: 5 * 60 * 1000,
+            // Stale-while-revalidate pattern
+            staleTime: STALE_TIME,
 
-            // Keep unused data in cache for 30 minutes
-            gcTime: 30 * 60 * 1000,
+            // Garbage collection time
+            gcTime: GC_TIME,
 
-            // Retry logic for queries (GET requests are idempotent)
-            retry: shouldRetry,
-            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+            // Smart retry with backoff
+            retry: shouldRetryQuery,
+            retryDelay: getRetryDelay,
 
-            // Don't refetch on window focus in dev (can be noisy)
+            // Refetch on window focus (production only)
             refetchOnWindowFocus: import.meta.env.PROD,
 
-            // Throw errors to error boundary
-            throwOnError: true,
+            // Refetch on reconnect (for offline recovery)
+            refetchOnReconnect: true,
+
+            // Don't throw - let components handle errors
+            throwOnError: false,
+
+            // Network mode: always try (we handle offline in error)
+            networkMode: 'always',
         },
         mutations: {
-            // Never retry mutations (non-idempotent)
+            // Never auto-retry mutations (non-idempotent)
             retry: false,
 
-            // Don't throw to boundary; handle in mutation callbacks
+            // Handle errors in callbacks, not boundary
             throwOnError: false,
+
+            // Network mode
+            networkMode: 'always',
         },
     },
 };
+
+// =============================================================================
+// FACTORY & SINGLETON
+// =============================================================================
 
 export function createQueryClient(): QueryClient {
     return new QueryClient(queryClientConfig);
 }
 
-// Singleton for use in App
+// Singleton for app usage
 let queryClient: QueryClient | null = null;
 
 export function getQueryClient(): QueryClient {
@@ -68,3 +115,10 @@ export function getQueryClient(): QueryClient {
     }
     return queryClient;
 }
+
+/** Reset query client (for testing) */
+export function resetQueryClient(): void {
+    queryClient?.clear();
+    queryClient = null;
+}
+

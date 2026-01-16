@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 import { postsApi } from './api';
 import type { CreatePostInput, Post } from './types';
-import type { FeedItem, FeedResponse } from '@/features/feed/types';
+import type { PostItem, FeedResponse } from '@/features/feed/types';
 
 interface OptimisticContext {
     previousFeedData: [readonly unknown[], FeedResponse | undefined][] | undefined;
@@ -28,21 +28,13 @@ export function useCreatePostOptimistic() {
             });
 
             // Optimistically update feed with new post
-            const optimisticPost: FeedItem = {
+            const optimisticPost: PostItem = {
                 id: `temp-${Date.now()}`,
-                type: 'post',
+                userId: 'current-user',
+                authorName: 'You',
+                content: newPostData.content,
+                imageUrl: null,
                 createdAt: new Date().toISOString(),
-                post: {
-                    id: `temp-${Date.now()}`,
-                    content: newPostData.content,
-                    author: {
-                        id: 'current-user',
-                        name: 'You',
-                    },
-                    likesCount: 0,
-                    commentsCount: 0,
-                    createdAt: new Date().toISOString(),
-                },
             };
 
             // Update all feed queries

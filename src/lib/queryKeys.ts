@@ -4,6 +4,12 @@
  */
 
 export const queryKeys = {
+    // Auth domain
+    auth: {
+        all: ['auth'] as const,
+        session: () => [...queryKeys.auth.all, 'session'] as const,
+    },
+
     // Feed domain
     feed: {
         all: ['feed'] as const,
@@ -28,5 +34,7 @@ export const queryKeys = {
         all: ['users'] as const,
         detail: (id: string) => [...queryKeys.users.all, 'detail', id] as const,
         me: () => [...queryKeys.users.all, 'me'] as const,
+        posts: (userId: string) => [...queryKeys.users.all, userId, 'posts'] as const,
     },
 } as const;
+

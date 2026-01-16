@@ -1,180 +1,151 @@
 /**
- * Feed page with full backend-awareness UX:
- * - Infinite scroll
- * - Skeleton loading
- * - Empty/error states
- * - Cached data fallback banners
- * - Slow response indicators
- * - Backend down handling
- * - Offline support
- * - Latency badge (Fast/Slow)
+ * Feed Page - Structure First.
+ * Static mock data with loading simulation.
  */
 
-import { useEffect } from 'react';
-import { useInfiniteFeed } from '@/features/feed/hooks';
-import { PostCard } from '@/features/feed/components/PostCard';
+import { useState, useEffect } from 'react';
+import { PostCard, type PostData } from '@/components/feed/PostCard';
 import { FeedSkeleton } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { CachedDataBanner, BackendDownBanner, OfflineBanner } from '@/components/ui/StatusBanner';
-import { SlowLoadingIndicator } from '@/components/ui/SlowLoadingIndicator';
-import { RetryControls } from '@/components/ui/RetryControls';
-import { LatencyBadge } from '@/components/ui/LatencyBadge';
-import { useIntersectionObserver, useNetworkStatus } from '@/hooks';
-import { ApiError } from '@/lib/api';
+import { Button } from '@/components/ui/Button';
+
+// =============================================================================
+// MOCK DATA
+// =============================================================================
+
+const MOCK_POSTS: PostData[] = [
+    {
+        id: '1',
+        author: {
+            id: 'user-1',
+            name: 'Sarah Chen',
+            avatarUrl: undefined,
+        },
+        content: 'Just shipped a new feature! 🚀 The team worked incredibly hard on this one. Feeling grateful to work with such talented people.',
+        createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 min ago
+        likeCount: 24,
+        commentCount: 5,
+        isLiked: true,
+    },
+    {
+        id: '2',
+        author: {
+            id: 'user-2',
+            name: 'Marcus Johnson',
+            avatarUrl: undefined,
+        },
+        content: 'Hot take: TypeScript is just JavaScript with extra steps... and I love every single one of those steps. Type safety for the win! 💪',
+        createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 min ago
+        likeCount: 89,
+        commentCount: 23,
+        isLiked: false,
+    },
+    {
+        id: '3',
+        author: {
+            id: 'user-3',
+            name: 'Emily Rodriguez',
+            avatarUrl: undefined,
+        },
+        content: 'Reading "Designing Data-Intensive Applications" for the third time. Every read reveals something new. Highly recommend for anyone building scalable systems.',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+        likeCount: 156,
+        commentCount: 12,
+        isLiked: false,
+    },
+    {
+        id: '4',
+        author: {
+            id: 'user-4',
+            name: 'Alex Kim',
+            avatarUrl: undefined,
+        },
+        content: 'Morning coffee ☕ + VSCode + good music = perfect coding session.\n\nWhat\'s your ideal coding setup?',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
+        likeCount: 67,
+        commentCount: 31,
+        isLiked: true,
+    },
+    {
+        id: '5',
+        author: {
+            id: 'user-5',
+            name: 'Jordan Lee',
+            avatarUrl: undefined,
+        },
+        content: 'Finally figured out that bug that\'s been haunting me for 3 days. Turns out it was a single missing await. async/await is beautiful until it isn\'t. 😅',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+        likeCount: 203,
+        commentCount: 45,
+        isLiked: false,
+    },
+];
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
 
 export default function FeedPage() {
-    const {
-        data,
-        isLoading,
-        isError,
-        error,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        refetch,
-        isRefetching,
-        isFetching,
-        failureCount,
-        dataUpdatedAt,
-        isStale,
-    } = useInfiniteFeed(20);
+    const [isLoading, setIsLoading] = useState(true);
+    const [posts, setPosts] = useState<PostData[]>([]);
 
-    const { isOffline } = useNetworkStatus();
-
-    const { targetRef, isIntersecting } = useIntersectionObserver({
-        enabled: hasNextPage && !isFetchingNextPage && !isError,
-    });
-
-    // Trigger fetch when sentinel intersects
+    // Simulate loading delay
     useEffect(() => {
-        if (isIntersecting && hasNextPage && !isFetchingNextPage) {
-            void fetchNextPage();
-        }
-    }, [isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage]);
+        const timer = setTimeout(() => {
+            setPosts(MOCK_POSTS);
+            setIsLoading(false);
+        }, 1500); // 1.5 second delay
 
-    // Check if we have cached data
-    const hasCachedData = !!data?.pages.length;
-    const allItems = data?.pages.flatMap((page) => page.items) ?? [];
+        return () => clearTimeout(timer);
+    }, []);
 
-    // Determine if this is a backend down situation
-    const isBackendDown =
-        isError && error instanceof ApiError && (error.status >= 500 || error.status === 0);
+    const handleLike = (postId: string) => {
+        setPosts(prev => prev.map(post =>
+            post.id === postId
+                ? { ...post, isLiked: !post.isLiked, likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1 }
+                : post
+        ));
+    };
 
-    // Determine if showing stale/cached data
-    const showCachedBanner = hasCachedData && isStale && !isRefetching;
-    const cacheAge = dataUpdatedAt ? Date.now() - dataUpdatedAt : 0;
-    const isCacheOld = cacheAge > 5 * 60 * 1000; // More than 5 minutes old
-
-    // Initial loading state
-    if (isLoading && !hasCachedData) {
-        return (
-            <div className="max-w-2xl mx-auto space-y-4">
-                <FeedSkeleton count={5} />
-                <SlowLoadingIndicator
-                    isLoading={isLoading}
-                    delay={3000}
-                    message="Taking longer than expected. Please wait..."
-                />
-            </div>
-        );
-    }
-
-    // Backend down with no cached data
-    if (isBackendDown && !hasCachedData) {
-        return (
-            <div className="max-w-2xl mx-auto space-y-4">
-                {isOffline ? (
-                    <OfflineBanner />
-                ) : (
-                    <BackendDownBanner onRetry={() => void refetch()} isRetrying={isRefetching} />
-                )}
-                <RetryControls
-                    onRetry={() => void refetch()}
-                    isRetrying={isRefetching}
-                    failureCount={failureCount}
-                    maxRetries={3}
-                />
-            </div>
-        );
-    }
-
-    // Error with no cached data (non-backend errors)
-    if (isError && !hasCachedData) {
-        return (
-            <div className="max-w-2xl mx-auto space-y-4">
-                <div className="bg-secondary border border-default rounded-lg p-6 text-center">
-                    <span className="text-4xl mb-4 block">⚠️</span>
-                    <h3 className="text-lg font-medium text-primary mb-2">Failed to load feed</h3>
-                    <p className="text-sm text-secondary mb-4">
-                        {error instanceof Error ? error.message : 'An unexpected error occurred'}
-                    </p>
-                    <RetryControls
-                        onRetry={() => void refetch()}
-                        isRetrying={isRefetching}
-                        failureCount={failureCount}
-                    />
-                </div>
-            </div>
-        );
-    }
-
-    // Empty state
-    if (allItems.length === 0) {
-        return (
-            <div className="max-w-2xl mx-auto">
-                <EmptyState
-                    icon="📝"
-                    title="No posts yet"
-                    description="Be the first to share something with the community."
-                />
-            </div>
-        );
-    }
+    const handleComment = (postId: string) => {
+        console.log('Comment clicked:', postId);
+    };
 
     return (
-        <div className="max-w-2xl mx-auto space-y-4">
-            {/* Feed header with latency indicator */}
-            <div className="flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-primary">Feed</h1>
-                <LatencyBadge isLoading={isLoading} isFetching={isFetching} />
+        <div className="max-w-2xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-xl font-semibold text-primary">Feed</h1>
+                <Button>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    New Post
+                </Button>
             </div>
 
-            {/* Status banners - don't hide failures */}
-            {isOffline && <OfflineBanner />}
+            {/* Loading state */}
+            {isLoading ? (
+                <FeedSkeleton count={5} />
+            ) : (
+                <>
+                    {/* Posts */}
+                    <div className="space-y-4">
+                        {posts.map((post) => (
+                            <PostCard
+                                key={post.id}
+                                post={post}
+                                onLike={handleLike}
+                                onComment={handleComment}
+                            />
+                        ))}
+                    </div>
 
-            {isBackendDown && hasCachedData && (
-                <BackendDownBanner onRetry={() => void refetch()} isRetrying={isRefetching} />
-            )}
-
-            {showCachedBanner && isCacheOld && !isBackendDown && !isOffline && (
-                <CachedDataBanner onRefresh={() => void refetch()} isRefreshing={isRefetching} />
-            )}
-
-            {/* Feed content */}
-            <div className="space-y-4">
-                {allItems.map((item) => (
-                    <PostCard key={item.id} item={item} />
-                ))}
-            </div>
-
-            {/* Infinite scroll sentinel */}
-            <div ref={targetRef} className="py-4">
-                {isFetchingNextPage && (
-                    <>
-                        <FeedSkeleton count={2} />
-                        <SlowLoadingIndicator
-                            isLoading={isFetchingNextPage}
-                            delay={3000}
-                            message="Loading more posts..."
-                        />
-                    </>
-                )}
-                {!hasNextPage && allItems.length > 0 && (
-                    <p className="text-center text-sm text-secondary py-4">
-                        You've reached the end
+                    {/* End of feed */}
+                    <p className="text-center text-sm text-tertiary py-8">
+                        You've reached the end of your feed
                     </p>
-                )}
-            </div>
+                </>
+            )}
         </div>
     );
 }

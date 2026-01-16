@@ -1,24 +1,22 @@
 /**
  * Global TypeScript type definitions.
- * Feature-specific types should remain in their respective feature folders.
+ * Re-exports core API types. Feature-specific types remain in their feature folders.
  */
 
-/** Common API response wrapper */
-export interface ApiResponse<T> {
-    data: T;
-    message?: string;
-    success: boolean;
-}
+// Core API types
+export type {
+    ApiResponse,
+    ApiErrorResponse,
+    ApiErrorCode,
+    CursorPaginationParams,
+    CursorPaginatedResponse,
+    OffsetPaginationParams,
+    OffsetPaginatedResponse,
+    RequestHeaders,
+} from './api';
 
-/** Pagination metadata */
-export interface PaginationMeta {
-    page: number;
-    pageSize: number;
-    total: number;
-    totalPages: number;
-}
+export { ERROR_STATUS_MAP } from './api';
 
-/** Paginated API response */
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-    meta: PaginationMeta;
-}
+// Legacy aliases for backwards compatibility
+export type { OffsetPaginatedResponse as PaginatedResponse } from './api';
+

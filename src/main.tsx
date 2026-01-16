@@ -6,15 +6,33 @@ import { QueryErrorBoundary } from './components/common/QueryErrorBoundary';
 import App from './App';
 import './index.css';
 
-const rootElement = document.getElementById('root');
-if (!rootElement) throw new Error('Root element not found');
+/**
+ * Start the application.
+ * In development, initializes MSW before rendering.
+ */
+async function startApp() {
+  // Start MSW in development mode
+  if (import.meta.env.DEV) {
+    const { worker } = await import('./mocks/browser');
+    await worker.start({
+      onUnhandledRequest: 'bypass', // Don't warn about unhandled requests
+      quiet: false, // Log intercepted requests
+    });
+    console.log('[MSW] Mock service worker started');
+  }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={getQueryClient()}>
-      <QueryErrorBoundary>
-        <App />
-      </QueryErrorBoundary>
-    </QueryClientProvider>
-  </StrictMode>
-);
+  const rootElement = document.getElementById('root');
+  if (!rootElement) throw new Error('Root element not found');
+
+  createRoot(rootElement).render(
+    <StrictMode>
+      <QueryClientProvider client={getQueryClient()}>
+        <QueryErrorBoundary>
+          <App />
+        </QueryErrorBoundary>
+      </QueryClientProvider>
+    </StrictMode>
+  );
+}
+
+startApp();

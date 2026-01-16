@@ -1,60 +1,120 @@
 /**
- * Profile page with user info and their posts.
- * Demonstrates cold cache behavior with placeholderData.
+ * Profile Page - Static mock data with loading simulation.
+ * Features avatar, bio, stats, tabs, and posts.
  */
 
-import { useUser } from '@/features/users/hooks';
-import { usePosts } from '@/features/posts/hooks';
-import { Skeleton, PostSkeleton } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { ErrorState } from '@/components/ui/ErrorState';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { ProfileSkeleton } from '@/components/ui/Skeleton';
+import { PostCard, type PostData } from '@/components/feed/PostCard';
+
+// =============================================================================
+// MOCK DATA
+// =============================================================================
+
+interface UserProfile {
+    id: string;
+    name: string;
+    bio: string;
+    avatarUrl?: string;
+    postsCount: number;
+    followersCount: number;
+    followingCount: number;
+}
+
+const MOCK_USER: UserProfile = {
+    id: 'current-user',
+    name: 'Demo User',
+    bio: 'Building amazing things with HIVE. Software engineer passionate about clean code and great UX.',
+    avatarUrl: undefined,
+    postsCount: 42,
+    followersCount: 128,
+    followingCount: 89,
+};
+
+const MOCK_USER_POSTS: PostData[] = [
+    {
+        id: 'p1',
+        author: { id: 'current-user', name: 'Demo User' },
+        content: 'Just finished setting up the new project! Excited to start building features. 🚀',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+        likeCount: 15,
+        commentCount: 3,
+        isLiked: false,
+    },
+    {
+        id: 'p2',
+        author: { id: 'current-user', name: 'Demo User' },
+        content: 'TIL: React 19 has some amazing new features. The compiler looks promising for performance optimization.',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+        likeCount: 45,
+        commentCount: 12,
+        isLiked: true,
+    },
+    {
+        id: 'p3',
+        author: { id: 'current-user', name: 'Demo User' },
+        content: 'Weekend project: building a social feed UI. Learning a lot about skeleton loading and shimmer animations!',
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+        likeCount: 32,
+        commentCount: 7,
+        isLiked: false,
+    },
+];
+
+// =============================================================================
+// TYPES
+// =============================================================================
 
 interface ProfilePageProps {
     userId: string;
 }
 
+type Tab = 'posts' | 'likes';
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
+
 export default function ProfilePage({ userId }: ProfilePageProps) {
-    const {
-        data: user,
-        isLoading: isLoadingUser,
-        isError: isUserError,
-        error: userError,
-        refetch: refetchUser,
-        isPlaceholderData,
-    } = useUser(userId);
+    const [activeTab, setActiveTab] = useState<Tab>('posts');
+    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState<UserProfile | null>(null);
+    const [posts, setPosts] = useState<PostData[]>([]);
 
-    const {
-        data: postsData,
-        isLoading: isLoadingPosts,
-        isError: isPostsError,
-        refetch: refetchPosts,
-    } = usePosts({ authorId: userId });
+    const { user: currentUser } = useAuth();
+    const isOwnProfile = currentUser?.id === userId || userId === 'current-user';
 
-    // User loading state
-    if (isLoadingUser && !isPlaceholderData) {
-        return (
-            <div className="max-w-2xl mx-auto space-y-6">
-                <ProfileSkeleton />
-            </div>
-        );
-    }
+    // Simulate loading delay
+    useEffect(() => {
+        setIsLoading(true);
+        const timer = setTimeout(() => {
+            setUser(MOCK_USER);
+            setPosts(MOCK_USER_POSTS);
+            setIsLoading(false);
+        }, 1200); // 1.2 second delay
 
-    // User error state
-    if (isUserError) {
-        return (
-            <div className="max-w-2xl mx-auto">
-                <ErrorState
-                    message={userError instanceof Error ? userError.message : 'Failed to load profile'}
-                    onRetry={() => void refetchUser()}
-                />
-            </div>
-        );
+        return () => clearTimeout(timer);
+    }, [userId]);
+
+    const handleLike = (postId: string) => {
+        setPosts(prev => prev.map(post =>
+            post.id === postId
+                ? { ...post, isLiked: !post.isLiked, likeCount: post.isLiked ? post.likeCount - 1 : post.likeCount + 1 }
+                : post
+        ));
+    };
+
+    // Loading state
+    if (isLoading) {
+        return <ProfileSkeleton />;
     }
 
     if (!user) {
         return (
-            <div className="max-w-2xl mx-auto">
-                <EmptyState icon="👤" title="User not found" />
+            <div className="max-w-2xl mx-auto text-center py-12">
+                <p className="text-secondary">User not found</p>
             </div>
         );
     }
@@ -62,16 +122,14 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
     return (
         <div className="max-w-2xl mx-auto space-y-6">
             {/* Profile Header */}
-            <div
-                className={`bg-white border border-gray-200 rounded-lg p-6 ${isPlaceholderData ? 'opacity-70' : ''}`}
-            >
+            <div className="bg-secondary border border-default rounded-lg p-6">
                 <div className="flex items-start gap-4">
                     {/* Avatar */}
-                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden shrink-0">
-                        {user.avatar ? (
-                            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                    <div className="w-20 h-20 rounded-full bg-tertiary flex items-center justify-center overflow-hidden shrink-0">
+                        {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
                         ) : (
-                            <span className="text-gray-500 text-xl font-medium">
+                            <span className="text-secondary text-2xl font-semibold">
                                 {user.name.charAt(0).toUpperCase()}
                             </span>
                         )}
@@ -79,82 +137,80 @@ export default function ProfilePage({ userId }: ProfilePageProps) {
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-xl font-semibold text-gray-900 truncate">{user.name}</h1>
-                        {user.bio && <p className="text-sm text-gray-600 mt-1">{user.bio}</p>}
+                        <div className="flex items-center justify-between">
+                            <h1 className="text-xl font-semibold text-primary truncate">{user.name}</h1>
+                            {isOwnProfile && (
+                                <Link
+                                    to="/settings"
+                                    className="px-3 py-1.5 text-sm font-medium text-secondary border border-default rounded-lg hover:bg-tertiary transition-colors"
+                                >
+                                    Edit Profile
+                                </Link>
+                            )}
+                        </div>
+                        {user.bio && <p className="text-sm text-secondary mt-2">{user.bio}</p>}
 
                         {/* Stats */}
-                        <div className="flex items-center gap-4 mt-3 text-sm">
+                        <div className="flex items-center gap-6 mt-4 text-sm">
                             <div>
-                                <span className="font-medium text-gray-900">{user.postsCount}</span>
-                                <span className="text-gray-500 ml-1">posts</span>
+                                <span className="font-semibold text-primary">{user.postsCount}</span>
+                                <span className="text-secondary ml-1">posts</span>
                             </div>
                             <div>
-                                <span className="font-medium text-gray-900">{user.followersCount}</span>
-                                <span className="text-gray-500 ml-1">followers</span>
+                                <span className="font-semibold text-primary">{user.followersCount}</span>
+                                <span className="text-secondary ml-1">followers</span>
                             </div>
                             <div>
-                                <span className="font-medium text-gray-900">{user.followingCount}</span>
-                                <span className="text-gray-500 ml-1">following</span>
+                                <span className="font-semibold text-primary">{user.followingCount}</span>
+                                <span className="text-secondary ml-1">following</span>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                {/* Cold cache indicator */}
-                {isPlaceholderData && (
-                    <p className="text-xs text-gray-400 mt-4">Loading latest data...</p>
-                )}
             </div>
 
-            {/* User's Posts */}
-            <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Posts</h2>
-
-                {isLoadingPosts ? (
-                    <div className="space-y-4">
-                        <PostSkeleton />
-                        <PostSkeleton />
-                    </div>
-                ) : isPostsError ? (
-                    <ErrorState message="Failed to load posts" onRetry={() => void refetchPosts()} />
-                ) : postsData?.posts.length === 0 ? (
-                    <EmptyState icon="📝" title="No posts yet" description="This user hasn't posted anything." />
-                ) : (
-                    <div className="space-y-4">
-                        {postsData?.posts.map((post) => (
-                            <article key={post.id} className="bg-white border border-gray-200 rounded-lg p-4">
-                                <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                                    {post.content}
-                                </p>
-                                <div className="flex items-center gap-4 mt-3 pt-2 border-t border-gray-100">
-                                    <span className="text-xs text-gray-500">❤️ {post.likesCount}</span>
-                                    <span className="text-xs text-gray-500">💬 {post.commentsCount}</span>
-                                </div>
-                            </article>
-                        ))}
-                    </div>
-                )}
+            {/* Tabs */}
+            <div className="flex border-b border-default">
+                <button
+                    onClick={() => setActiveTab('posts')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'posts'
+                        ? 'border-accent-600 text-accent-600'
+                        : 'border-transparent text-secondary hover:text-primary'
+                        }`}
+                >
+                    Posts
+                </button>
+                <button
+                    onClick={() => setActiveTab('likes')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'likes'
+                        ? 'border-accent-600 text-accent-600'
+                        : 'border-transparent text-secondary hover:text-primary'
+                        }`}
+                >
+                    Likes
+                </button>
             </div>
-        </div>
-    );
-}
 
-/** Profile header skeleton */
-function ProfileSkeleton() {
-    return (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <div className="flex items-start gap-4">
-                <Skeleton className="w-16 h-16 rounded-full" />
-                <div className="flex-1 space-y-2">
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-4 w-48" />
-                    <div className="flex gap-4 mt-3">
-                        <Skeleton className="h-4 w-16" />
-                        <Skeleton className="h-4 w-16" />
-                        <Skeleton className="h-4 w-16" />
-                    </div>
+            {/* Tab Content */}
+            {activeTab === 'posts' && (
+                <div className="space-y-4">
+                    {posts.map((post) => (
+                        <PostCard
+                            key={post.id}
+                            post={post}
+                            onLike={handleLike}
+                        />
+                    ))}
                 </div>
-            </div>
+            )}
+
+            {activeTab === 'likes' && (
+                <div className="text-center py-12">
+                    <span className="text-4xl mb-4 block">❤️</span>
+                    <h3 className="text-lg font-medium text-primary mb-2">Liked posts</h3>
+                    <p className="text-sm text-secondary">Posts you've liked will appear here.</p>
+                </div>
+            )}
         </div>
     );
 }

@@ -3,6 +3,7 @@
  */
 
 import type { HTMLAttributes, ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
     children: ReactNode;
@@ -19,7 +20,7 @@ const paddingStyles = {
 export function Card({ children, padding = 'md', className = '', ...props }: CardProps) {
     return (
         <div
-            className={`bg-secondary border border-default rounded-lg shadow-sm ${paddingStyles[padding]} ${className}`}
+            className={cn('bg-secondary border border-default rounded-lg shadow-sm', paddingStyles[padding], className)}
             {...props}
         >
             {children}
@@ -27,35 +28,48 @@ export function Card({ children, padding = 'md', className = '', ...props }: Car
     );
 }
 
-/** Card header with title and optional action */
-interface CardHeaderProps {
-    title: string;
-    description?: string;
-    action?: ReactNode;
+/** Card header section */
+interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
+    children: ReactNode;
 }
 
-export function CardHeader({ title, description, action }: CardHeaderProps) {
+export function CardHeader({ children, className, ...props }: CardHeaderProps) {
     return (
-        <div className="flex items-start justify-between mb-4">
-            <div>
-                <h3 className="text-lg font-semibold text-primary">{title}</h3>
-                {description && <p className="text-sm text-secondary mt-1">{description}</p>}
-            </div>
-            {action && <div>{action}</div>}
+        <div className={cn('flex flex-col space-y-1.5 p-6', className)} {...props}>
+            {children}
         </div>
+    );
+}
+
+/** Card title */
+export function CardTitle({ children, className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+    return (
+        <h3 className={cn('text-lg font-semibold leading-none tracking-tight text-primary', className)} {...props}>
+            {children}
+        </h3>
+    );
+}
+
+/** Card description */
+export function CardDescription({ children, className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
+    return (
+        <p className={cn('text-sm text-secondary', className)} {...props}>
+            {children}
+        </p>
     );
 }
 
 /** Card content wrapper */
 export function CardContent({ children, className = '' }: { children: ReactNode; className?: string }) {
-    return <div className={className}>{children}</div>;
+    return <div className={cn('p-6 pt-0', className)}>{children}</div>;
 }
 
 /** Card footer for actions */
 export function CardFooter({ children, className = '' }: { children: ReactNode; className?: string }) {
     return (
-        <div className={`mt-4 pt-4 border-t border-subtle flex items-center justify-end gap-3 ${className}`}>
+        <div className={cn('flex items-center p-6 pt-0', className)}>
             {children}
         </div>
     );
 }
+

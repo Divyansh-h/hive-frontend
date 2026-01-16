@@ -37,66 +37,72 @@ export const PostCard = memo(function PostCard({ item }: PostCardProps) {
 
     return (
         <article
-            className="bg-secondary border border-default rounded-lg p-4"
+            className="card"
             aria-labelledby={postId}
             tabIndex={0}
         >
-            {/* Header */}
-            <header className="flex items-center gap-3 mb-3">
-                <Avatar name={item.authorName} size="md" />
-                <div>
-                    <p id={postId} className="text-sm font-medium text-primary">
-                        {item.authorName}
-                    </p>
-                    <time
-                        dateTime={item.createdAt}
-                        className="text-xs text-secondary"
-                        title={new Date(item.createdAt).toLocaleString()}
+            <div className="card-body">
+                {/* Header */}
+                <header className="flex items-center gap-3 mb-4">
+                    <Avatar name={item.authorName} size="md" />
+                    <div className="min-w-0 flex-1">
+                        <p id={postId} className="text-sm font-semibold text-primary truncate">
+                            {item.authorName}
+                        </p>
+                        <time
+                            dateTime={item.createdAt}
+                            className="text-xs text-tertiary"
+                            title={new Date(item.createdAt).toLocaleString()}
+                        >
+                            {relativeTime}
+                        </time>
+                    </div>
+                </header>
+
+                {/* Content */}
+                <div
+                    id={contentId}
+                    className="text-primary text-sm leading-relaxed whitespace-pre-wrap"
+                >
+                    {item.content}
+                </div>
+
+                {/* Image if present */}
+                {item.imageUrl && (
+                    <div className="mt-4">
+                        <img
+                            src={item.imageUrl}
+                            alt="Post image"
+                            className="rounded-lg max-h-96 w-full object-cover"
+                        />
+                    </div>
+                )}
+
+                {/* Actions */}
+                <footer
+                    className="flex items-center gap-6 mt-4 pt-4 border-t border-subtle"
+                    role="group"
+                    aria-label="Post actions"
+                >
+                    <button
+                        className="flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500 rounded px-1 py-0.5"
+                        aria-label="Like post"
+                        type="button"
                     >
-                        {relativeTime}
-                    </time>
-                </div>
-            </header>
-
-            {/* Content */}
-            <div id={contentId} className="text-primary text-sm leading-relaxed mb-3 whitespace-pre-wrap">
-                {item.content}
+                        <span aria-hidden="true">❤️</span>
+                        <span className="font-medium">Like</span>
+                    </button>
+                    <button
+                        className="flex items-center gap-2 text-sm text-secondary hover:text-primary transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500 rounded px-1 py-0.5"
+                        aria-label="Comment on post"
+                        type="button"
+                    >
+                        <span aria-hidden="true">💬</span>
+                        <span className="font-medium">Comment</span>
+                    </button>
+                </footer>
             </div>
-
-            {/* Image if present */}
-            {item.imageUrl && (
-                <div className="mb-3">
-                    <img
-                        src={item.imageUrl}
-                        alt="Post image"
-                        className="rounded-lg max-h-96 w-full object-cover"
-                    />
-                </div>
-            )}
-
-            {/* Actions */}
-            <footer
-                className="flex items-center gap-4 pt-2 border-t border-subtle"
-                role="group"
-                aria-label="Post actions"
-            >
-                <button
-                    className="flex items-center gap-1 text-sm text-secondary hover:text-accent-600 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500 rounded px-1"
-                    aria-label="Like post"
-                    type="button"
-                >
-                    <span aria-hidden="true">❤️</span>
-                    <span>Like</span>
-                </button>
-                <button
-                    className="flex items-center gap-1 text-sm text-secondary hover:text-accent-600 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500 rounded px-1"
-                    aria-label="Comment on post"
-                    type="button"
-                >
-                    <span aria-hidden="true">💬</span>
-                    <span>Comment</span>
-                </button>
-            </footer>
         </article>
     );
 });
+
