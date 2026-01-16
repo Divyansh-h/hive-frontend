@@ -140,3 +140,42 @@ export function ProfileHeaderSkeleton() {
         </div>
     );
 }
+// =============================================================================
+// AUTH SKELETON - Login/Signup Card
+// =============================================================================
+
+export function AuthSkeleton() {
+    return (
+        <div className="w-full max-w-sm">
+            {/* Logo + Header */}
+            <div className="text-center mb-8 flex flex-col items-center">
+                <Skeleton className="w-10 h-10 rounded mb-4" />
+                <Skeleton className="h-8 w-48 mb-2" />
+                <Skeleton className="h-4 w-64" />
+            </div>
+
+            {/* Card */}
+            <div className="bg-secondary border border-default rounded-lg p-6 space-y-6">
+                {/* Input 1 */}
+                <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-12" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+
+                {/* Input 2 */}
+                <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+
+                {/* Button */}
+                <Skeleton className="h-12 w-full rounded-lg" />
+
+                {/* Footer */}
+                <div className="pt-6 border-t border-default flex justify-center">
+                    <Skeleton className="h-4 w-48" />
+                </div>
+            </div>
+        </div>
+    );
+}

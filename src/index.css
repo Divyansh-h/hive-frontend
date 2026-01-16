@@ -138,24 +138,37 @@
 }
 
 /* ============================================
-   DARK MODE
+   DARK MODE - Calm, refined aesthetics
+   No pure black (#000), no pure white (#fff)
    ============================================ */
 
 .dark {
-  --bg-primary: var(--color-neutral-950);
-  --bg-secondary: var(--color-neutral-900);
-  --bg-tertiary: var(--color-neutral-800);
+  /* Backgrounds: Warm slate-based, not pure black */
+  --bg-primary: #0f1419;
+  /* Warm dark slate */
+  --bg-secondary: #161b22;
+  /* Slightly lighter slate */
+  --bg-tertiary: #1c2128;
+  /* Card/elevated surfaces */
 
-  --text-primary: var(--color-neutral-50);
-  --text-secondary: var(--color-neutral-400);
-  --text-tertiary: var(--color-neutral-500);
-  --text-inverse: var(--color-neutral-900);
+  /* Text: Soft off-white for readability, not pure white */
+  --text-primary: #e6edf3;
+  /* 93% brightness, warm tint */
+  --text-secondary: #8b949e;
+  /* Comfortable 55% contrast */
+  --text-tertiary: #6e7681;
+  /* Subtle, 43% contrast */
+  --text-inverse: #0f1419;
 
-  --border-default: var(--color-neutral-700);
-  --border-subtle: var(--color-neutral-800);
+  /* Borders: Visible but not harsh */
+  --border-default: #30363d;
+  /* Clear but calm border */
+  --border-subtle: #21262d;
+  /* Very subtle divider */
 
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+  /* Shadows: Deeper for dark mode */
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
 }
 
 /* ============================================
@@ -312,4 +325,68 @@ body {
 
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
+}
+
+/* Subtle one-time pulse for CTA highlighting - no flashing */
+@keyframes pulse-once {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-pulse-once {
+    animation: pulse-once 1.5s ease-out 0.8s forwards;
+  }
+}
+
+/* Error shake animation */
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-2px);
+  }
+
+  40% {
+    transform: translateX(2px);
+  }
+
+  60% {
+    transform: translateX(-1px);
+  }
+
+  80% {
+    transform: translateX(1px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-shake {
+    animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  }
+}
+
+@layer utilities {
+  .auth-background {
+    background-color: var(--bg-primary);
+    background-image:
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E"),
+      radial-gradient(circle at center, var(--bg-secondary) 0%, transparent 70%);
+    background-position: center;
+    background-repeat: repeat, no-repeat;
+    background-size: 200px 200px, 100% 100%;
+  }
 }

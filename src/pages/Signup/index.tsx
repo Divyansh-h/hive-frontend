@@ -1,14 +1,16 @@
 /**
- * Signup Page.
- * Form validation, password visibility toggle, mock auth.
+ * Signup Page - A1: Structural Layout.
+ * Centered AuthCard with logo, form, and switch link.
  */
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
+import { AuthSkeleton } from '@/components/ui/Skeleton';
 import { useAuth } from '@/contexts/AuthContext';
+import { motion } from 'framer-motion';
 
 interface FormErrors {
     name?: string;
@@ -18,13 +20,49 @@ interface FormErrors {
     general?: string;
 }
 
+// Animation variants
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.1,
+            delayChildren: 0.1
+        }
+    },
+    exit: {
+        opacity: 0,
+        transition: { duration: 0.2 }
+    }
+};
+
+const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
+    }
+};
+
 export default function SignupPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { login } = useAuth();
 
+    // Simulate initial page load
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsInitialLoading(false);
+        }, 500); // 500ms initial load simulation
+        return () => clearTimeout(timer);
+    }, []);
+
     const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState((location.state as any)?.email || '');
+    const [password, setPassword] = useState((location.state as any)?.password || '');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -94,7 +132,8 @@ export default function SignupPage() {
         <button
             type="button"
             onClick={onToggle}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-primary"
+            disabled={isSubmitting}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-tertiary hover:text-secondary transition-colors duration-150 disabled:opacity-50"
             aria-label={show ? 'Hide password' : 'Show password'}
         >
             {show ? (
@@ -110,137 +149,168 @@ export default function SignupPage() {
         </button>
     );
 
+    if (isInitialLoading) {
+        return (
+            <div className="min-h-screen auth-background flex items-center justify-center p-6">
+                <AuthSkeleton />
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-primary flex items-center justify-center p-6">
-            <div className="w-full max-w-md">
-                {/* Logo */}
-                <div className="text-center mb-8">
-                    <Link to="/" className="text-2xl font-bold text-primary">
-                        HIVE
+        <div className="min-h-screen auth-background flex items-center justify-center p-6">
+            <motion.div
+                className="w-full max-w-sm"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+            >
+                {/* Logo + Header */}
+                <motion.div className="text-center mb-8" variants={itemVariants}>
+                    <Link to="/" className="inline-flex items-center gap-2 mb-4">
+                        <img src="/hive.png" alt="HIVE" className="w-10 h-10" />
                     </Link>
-                    <p className="text-secondary mt-2">Create your account</p>
-                </div>
+                    <h1 className="text-2xl font-semibold text-primary">Create your account</h1>
+                    <p className="text-sm text-secondary mt-1">Join HIVE for a calmer feed</p>
+                </motion.div>
 
-                <Card padding="lg">
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* General error */}
-                        {errors.general && (
-                            <div className="p-3 bg-error-100 dark:bg-error-900/30 border border-error-500 rounded-lg">
-                                <p className="text-sm text-error-700 dark:text-error-400">{errors.general}</p>
-                            </div>
-                        )}
+                <motion.div variants={itemVariants}>
+                    <Card padding="lg">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* General error */}
+                            {errors.general && (
+                                <div className="p-3 bg-error-100 dark:bg-error-900/30 border border-error-500 rounded-lg">
+                                    <p className="text-sm text-error-700 dark:text-error-400">{errors.general}</p>
+                                </div>
+                            )}
 
-                        {/* Name */}
-                        <Input
-                            label="Full Name"
-                            type="text"
-                            placeholder="John Doe"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            error={errors.name}
-                            autoComplete="name"
-                            autoFocus
-                        />
+                            {/* Name */}
+                            <Input
+                                label="Full Name"
+                                type="text"
+                                placeholder="John Doe"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                disabled={isSubmitting}
+                                error={errors.name}
+                                autoComplete="name"
+                                autoFocus
+                            />
 
-                        {/* Email */}
-                        <Input
-                            label="Email"
-                            type="email"
-                            placeholder="you@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            error={errors.email}
-                            autoComplete="email"
-                        />
+                            {/* Email */}
+                            <Input
+                                label="Email"
+                                type="email"
+                                placeholder="you@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isSubmitting}
+                                error={errors.email}
+                                autoComplete="email"
+                            />
 
-                        {/* Password */}
-                        <div className="space-y-1">
-                            <label htmlFor="password" className="block text-sm font-medium text-primary">
-                                Password
-                            </label>
-                            <div className="relative">
-                                <input
-                                    id="password"
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    autoComplete="new-password"
-                                    className={`
-                                        w-full px-3 py-2 pr-10 text-sm
+                            {/* Password */}
+                            <div className="space-y-1.5">
+                                <label htmlFor="password" className="block text-sm font-medium text-primary">
+                                    Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="Create a password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        disabled={isSubmitting}
+                                        autoComplete="new-password"
+                                        className={`
+                                        w-full px-3 py-2.5 pr-10 text-sm
                                         bg-secondary text-primary
-                                        border rounded-md
+                                        border rounded-lg
                                         placeholder:text-tertiary
-                                        focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent
-                                        ${errors.password ? 'border-error-500 focus:ring-error-500' : 'border-default'}
+                                        transition-all duration-150 ease-in-out
+                                        focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500
+                                        disabled:bg-tertiary disabled:cursor-not-allowed disabled:opacity-50
+                                        ${errors.password ? 'border-error-500 focus:ring-error-500 focus:border-error-500 animate-shake' : 'hover:border-subtle'}
                                     `}
-                                />
-                                <PasswordToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
+                                    />
+                                    <PasswordToggle show={showPassword} onToggle={() => setShowPassword(!showPassword)} />
+                                </div>
+                                {errors.password && <p className="text-sm text-error-500">{errors.password}</p>}
+                                {!errors.password && (
+                                    <p className="text-xs text-tertiary">
+                                        At least 8 characters with uppercase, lowercase, and number
+                                    </p>
+                                )}
                             </div>
-                            {errors.password && <p className="text-sm text-error-500">{errors.password}</p>}
-                            <p className="text-xs text-tertiary mt-1">
-                                At least 8 characters with uppercase, lowercase, and number
+
+                            {/* Confirm Password */}
+                            <div className="space-y-1.5">
+                                <label htmlFor="confirm-password" className="block text-sm font-medium text-primary">
+                                    Confirm Password
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        id="confirm-password"
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        placeholder="Confirm your password"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        disabled={isSubmitting}
+                                        autoComplete="new-password"
+                                        className={`
+                                        w-full px-3 py-2.5 pr-10 text-sm
+                                        bg-secondary text-primary
+                                        border rounded-lg
+                                        placeholder:text-tertiary
+                                        transition-all duration-150 ease-in-out
+                                        focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-accent-500
+                                        disabled:bg-tertiary disabled:cursor-not-allowed disabled:opacity-50
+                                        ${errors.confirmPassword ? 'border-error-500 focus:ring-error-500 focus:border-error-500 animate-shake' : 'hover:border-subtle'}
+                                    `}
+                                    />
+                                    <PasswordToggle show={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} />
+                                </div>
+                                {errors.confirmPassword && <p className="text-sm text-error-500">{errors.confirmPassword}</p>}
+                            </div>
+
+                            {/* Submit */}
+                            <Button type="submit" className="w-full" size="lg" isLoading={isSubmitting}>
+                                Create account
+                            </Button>
+                        </form>
+
+                        {/* Terms */}
+                        <p className="mt-6 text-xs text-center text-tertiary">
+                            By signing up, you agree to our{' '}
+                            <a href="#" className="text-accent-600 hover:underline">Terms</a>{' '}and{' '}
+                            <a href="#" className="text-accent-600 hover:underline">Privacy Policy</a>.
+                        </p>
+
+                        {/* Footer */}
+                        <div className="mt-4 pt-6 border-t border-default text-center">
+                            <p className="text-sm text-secondary">
+                                Already have an account?{' '}
+                                <Link
+                                    to="/login"
+                                    state={{ email, password }}
+                                    className="text-accent-600 hover:text-accent-700 font-medium"
+                                >
+                                    Log in
+                                </Link>
                             </p>
                         </div>
-
-                        {/* Confirm Password */}
-                        <div className="space-y-1">
-                            <label htmlFor="confirm-password" className="block text-sm font-medium text-primary">
-                                Confirm Password
-                            </label>
-                            <div className="relative">
-                                <input
-                                    id="confirm-password"
-                                    type={showConfirmPassword ? 'text' : 'password'}
-                                    placeholder="••••••••"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    autoComplete="new-password"
-                                    className={`
-                                        w-full px-3 py-2 pr-10 text-sm
-                                        bg-secondary text-primary
-                                        border rounded-md
-                                        placeholder:text-tertiary
-                                        focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent
-                                        ${errors.confirmPassword ? 'border-error-500 focus:ring-error-500' : 'border-default'}
-                                    `}
-                                />
-                                <PasswordToggle show={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} />
-                            </div>
-                            {errors.confirmPassword && <p className="text-sm text-error-500">{errors.confirmPassword}</p>}
-                        </div>
-
-                        {/* Submit */}
-                        <Button type="submit" className="w-full" isLoading={isSubmitting}>
-                            Create Account
-                        </Button>
-                    </form>
-
-                    {/* Terms */}
-                    <p className="mt-4 text-xs text-center text-tertiary">
-                        By signing up, you agree to our{' '}
-                        <a href="#" className="text-accent-600 hover:underline">Terms</a> and{' '}
-                        <a href="#" className="text-accent-600 hover:underline">Privacy Policy</a>.
-                    </p>
-
-                    {/* Footer */}
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-secondary">
-                            Already have an account?{' '}
-                            <Link to="/login" className="text-accent-600 hover:text-accent-700 font-medium">
-                                Log in
-                            </Link>
-                        </p>
-                    </div>
-                </Card>
+                    </Card>
+                </motion.div>
 
                 {/* Back to home */}
-                <div className="mt-6 text-center">
+                <motion.div className="mt-6 text-center" variants={itemVariants}>
                     <Link to="/" className="text-sm text-secondary hover:text-primary">
                         ← Back to home
                     </Link>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
         </div>
     );
 }
